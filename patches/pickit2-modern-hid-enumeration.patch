@@ -1,0 +1,29 @@
+--- a/PICkit2V2/PICkit2V2/USB.cs
++++ b/PICkit2V2/PICkit2V2/USB.cs
+@@
+-            for (int l_loop = 0; l_loop < 20; l_loop++)
++            // Modern Windows systems commonly expose more than 20 HID interfaces.
++            // Keep scanning so PICkit 2 is not skipped when it enumerates later.
++            for (int l_loop = 0; l_loop < 256; l_loop++)
+@@
+                     SingledevicePathName = Marshal.PtrToStringAuto(pdevicePathName);
++                    Marshal.FreeHGlobal(DetailDataBuffer);
++
++                    // Avoid opening unrelated HID interfaces. Some modern HID
++                    // devices can block legacy synchronous CreateFile calls.
++                    string vidPid = string.Format("vid_{0:x4}&pid_{1:x4}", p_VendorID, p_PoductID);
++                    if ((SingledevicePathName == null) ||
++                        (SingledevicePathName.IndexOf(vidPid, StringComparison.OrdinalIgnoreCase) < 0))
++                    {
++                        continue;
++                    }
+                     l_temp_handle = CreateFile(
+@@
+                 }  // if result == true
++                else
++                {
++                    // SetupDiEnumDeviceInterfaces reports no more items.
++                    // Avoid repeatedly probing empty indexes up to the scan cap.
++                    break;
++                }
+             }  // end for
